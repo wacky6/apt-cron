@@ -11,8 +11,7 @@ const nop = () => {}
 async function openAndWait(url) {
     const browser = await puppeteer.launch({ headless: process.env['NO_HEADLESS'] ? false : true })
     const page = await browser.newPage()
-    await page.goto(url)
-    await page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle2' }).then(nop, nop)
+    await page.goto(url, { timeout: 120000, waitUntil: 'networkidle2' }).then(nop, nop)
     page.destroy = () => browser.close()
     return page
 }
