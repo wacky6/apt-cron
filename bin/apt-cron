@@ -6,51 +6,66 @@ const sendgrid = require('@sendgrid/mail')
 const QUERY_BELCON = 'https://www.allhomes.com.au/ah/act/rent-residential/belconnen/11244512/listed-date?datetype=TODAY'
 
 ;(async () => {
-    const listings = await fetchList(QUERY_BELCON)
-
-    const wanted = listings.filter(({
-        summary: _summary,
-        price,
-        beds
-    }) => {
-        const summary = _summary.toLowerCase()
-        // if (summary.includes("belconnen")) return true
-        if (summary.includes("eastern valley")) return true
-        if (summary.includes("benjamin")) return true
-        if (summary.includes("college")) return true
-        if (summary.includes("chandler")) return true
-        if (summary.includes("beissel")) return true
-        if (summary.privateRental) return true
-        return false
-    })
-
-    if (!wanted.length) return
-
-    const html = `
-        <table border="0">
-            ${
-                wanted.map(entry => `
-                    <tr>
-                        <td><img style="{max-height:180px;max-width:180px;height:auto;width:auto;}" src="${ entry.thumbHref }"></td>
-                        <td><a href="${ entry.href }">${ entry.summary }</a></td>
-                        <td style="width: 12ch">${ entry.beds || '?' }br</td>
-                        <td style="width: 12ch">$${ entry.price || '?' }</td>
-                        <td>${ entry.agency || (entry.privateRental ? "***Private" : "") }</td>
-                    </tr>
-                `).join('\n')
-            }
-        </table>
-    `
-    .replace(/\s{2,}/g, '')
-
     const API_KEY = process.env['SENDGRID_API_KEY']
-    if (API_KEY) {
-        sendgrid.setApiKey(API_KEY)
-        sendgrid.send({
-            to: 'qjw@wacky.one',
-            from: 'apt-cron@wacky.one',
-            subject: `Apartment Report on ${ new Date().toISOString().slice(0, 10) }, (${ wanted.length })`,
-            html
+    sendgrid.setApiKey(API_KEY)
+
+    try {
+        const listings = await fetchList(QUERY_BELCON)
+
+        const wanted = listings.filter(({
+            summary: _summary,
+            price,
+            beds
+        }) => {
+            const summary = _summary.toLowerCase()
+            // if (summary.includes("belconnen")) return true
+            if (summary.includes("eastern valley")) return true
+            if (summary.includes("benjamin")) return true
+            if (summary.includes("college")) return true
+            if (summary.includes("chandler")) return true
+            if (summary.includes("beissel")) return true
+            if (summary.privateRental) return true
+            return false
         })
+
+        if (!wanted.length) return
+
+        const html = `
+            <table border="0">
+                ${
+                    wanted.map(entry => `
+                        <tr>
+                            <td><img style="{max-height:180px;max-width:180px;height:auto;width:auto;}" src="${ entry.thumbHref }"></td>
+                            <td><a href="${ entry.href }">${ entry.summary }</a></td>
+                            <td style="width: 12ch">${ entry.beds || '?' }br</td>
+                            <td style="width: 12ch">$${ entry.price || '?' }</td>
+                            <td>${ entry.agency || (entry.privateRental ? "***Private" : "") }</td>
+                        </tr>
+                    `).join('\n')
+                }
+            </table>
+        `
+        .replace(/\s{2,}/g, '')
+
+        const API_KEY = process.env['SENDGRID_API_KEY']
+        if (API_KEY) {
+            sendgrid.send({
+                to: 'qjw@wacky.one',
+                from: 'apt-cron@wacky.one',
+                subject: `Apartment Report on ${ new Date().toISOString().slice(0, 10) }, (${ wanted.length })`,
+                html
+            })
+        }
+    } catch(e) {
+        if (API_KEY) {
+            sendgrid.send({
+                to: 'qjw@wacky.one',
+                from: 'apt-cron@wacky.one',
+                subject: `Error during list capture, on ${ new Date().toISOString().slice(0, 10) }`,
+                html: `
+                    <pre>${e.stack}</pre>
+                `
+            })
+        }
     }
 })()
