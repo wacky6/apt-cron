@@ -9,9 +9,20 @@ const cheerio = require('cheerio')
 const nop = () => {}
 
 async function openAndWait(url) {
-    const browser = await puppeteer.launch({ headless: process.env['NO_HEADLESS'] ? false : true })
+    let launchOpts = {
+        headless: process.env['NO_HEADLESS'] ? false : true,
+        args: [
+            ...(
+                process.env['IS_DOCKER'] || process.getuid() === 0
+                ? ['--no-sandbox', '--disable-setuid-sandbox']
+                : []
+            )
+        ]
+    }
+    const timeout = parseInt(process.env['TIMEOUT'], 10) || 30000
+    const browser = await puppeteer.launch(launchOpts)
     const page = await browser.newPage()
-    await page.goto(url, { timeout: 120000, waitUntil: 'networkidle2' }).then(nop, nop)
+    await page.goto(url, { timeout, waitUntil: 'networkidle2' }).then(nop, nop)
     page.destroy = () => browser.close()
     return page
 }

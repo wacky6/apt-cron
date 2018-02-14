@@ -11,6 +11,7 @@ const QUERY_BELCON = 'https://www.allhomes.com.au/ah/act/rent-residential/belcon
 
     try {
         const listings = await fetchList(QUERY_BELCON)
+        console.log(`found ${ listings.length } properties`)
 
         const wanted = listings.filter(({
             summary: _summary,
@@ -27,6 +28,8 @@ const QUERY_BELCON = 'https://www.allhomes.com.au/ah/act/rent-residential/belcon
             if (summary.privateRental) return true
             return false
         })
+
+        console.log(`found ${ listings.length } wanted properties`)
 
         if (!wanted.length) return
 
@@ -55,8 +58,12 @@ const QUERY_BELCON = 'https://www.allhomes.com.au/ah/act/rent-residential/belcon
                 subject: `Apartment Report on ${ new Date().toISOString().slice(0, 10) }, (${ wanted.length })`,
                 html
             })
+            console.log(`email delivered`)
+        } else {
+            console.log(`email delivery skipped due to missing Sendgrid API key`)
         }
     } catch(e) {
+        console.error(e.stack)
         if (API_KEY) {
             sendgrid.send({
                 to: 'qjw@wacky.one',
