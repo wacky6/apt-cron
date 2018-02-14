@@ -1,0 +1,13 @@
+{
+  "name": "apt",
+  "version": "0.1.0",
+  "description": "apartment buzzer",
+  "main": "bin/apt",
+  "author": "wacky6",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@sendgrid/mail": "^6.2.1",
+    "cheerio": "^1.0.0-rc.2",
+    "puppeteer": "^1.0.0"
+  }
+}
