@@ -29,7 +29,7 @@ const QUERY_BELCON = 'https://www.allhomes.com.au/ah/act/rent-residential/belcon
             return false
         })
 
-        console.log(`found ${ listings.length } wanted properties`)
+        console.log(`found ${ wanted.length } wanted properties`)
 
         if (!wanted.length) return
 
