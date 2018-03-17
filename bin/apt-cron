@@ -54,7 +54,7 @@ const QUERY_BELCON = 'https://www.allhomes.com.au/ah/act/rent-residential/belcon
         if (API_KEY) {
             sendgrid.send({
                 to: 'qjw@wacky.one',
-                from: 'apt-cron@wacky.one',
+                from: 'apt-cron@mail.wacky.one',
                 subject: `Apartment Report on ${ new Date().toISOString().slice(0, 10) }, (${ wanted.length })`,
                 html
             })
