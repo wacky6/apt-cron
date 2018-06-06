@@ -2,7 +2,10 @@
   "name": "apt",
   "version": "0.1.0",
   "description": "apartment buzzer",
-  "main": "bin/apt",
+  "main": "fetch-raw.js",
+  "bin": {
+    "apt-cron": "bin/apt-cron"
+  },
   "author": "wacky6",
   "license": "GPL-3.0",
   "dependencies": {
