@@ -3,76 +3,83 @@
 const { fetchList } = require('../fetch-raw')
 const sendgrid = require('@sendgrid/mail')
 
-const QUERY_BELCON = 'https://www.allhomes.com.au/ah/act/rent-residential/belconnen/11244512/listed-date?datetype=TODAY'
+const QUERY = 'https://www.allhomes.com.au/ah/act/rent-residential/canberra/1039112/listed-date'
+const WANTED_STREETS = [
+    'belconnen',
+    'gungahlin',
+    'flemmington',
+    'northbourne',
+    'london',
+    'braddon',
+    'turner',,
+    'city',
+    '2601',
+    '2600'
+]
+
+async function deliver_email(subject, html) {
+    const API_KEY = process.env['SENDGRID_API_KEY']
+    if (API_KEY) {
+        sendgrid.send({
+            to: 'qjw@wacky.one',
+            from: 'apt-cron@mail.wacky.one',
+            subject,
+            html
+        })
+        console.log(`email delivered`)
+    } else {
+        console.log(`email delivery skipped due to missing Sendgrid API key`)
+    }
+}
 
 ;(async () => {
     const API_KEY = process.env['SENDGRID_API_KEY']
     sendgrid.setApiKey(API_KEY)
 
     try {
-        const listings = await fetchList(QUERY_BELCON)
+        const listings = await fetchList(QUERY)
         console.log(`found ${ listings.length } properties`)
 
+        if (listings.length === 0) {
+            // allhomes may have updated their format
+            await deliver_email(
+                `[WARN] Apartment Report: no listing found, on ${ new Date().toISOString().slice(0, 10) }`,
+                'Not a single listing found. If is not holiday, allhomes may have changed format.'
+            )
+            return
+        }
+
         const wanted = listings.filter(({
-            summary: _summary,
+            summary,
             price,
-            beds
-        }) => {
-            const summary = _summary.toLowerCase()
-            // if (summary.includes("belconnen")) return true
-            if (summary.includes("eastern valley")) return true
-            if (summary.includes("benjamin")) return true
-            if (summary.includes("college")) return true
-            if (summary.includes("chandler")) return true
-            if (summary.includes("beissel")) return true
-            if (summary.privateRental) return true
-            return false
-        })
+            beds,
+        }) => WANTED_STREETS.reduce(
+            (ret, streetName) => ret || summary.toLowerCase().includes(streetName.toLowerCase()),
+            false
+        ))
 
         console.log(`found ${ wanted.length } wanted properties`)
-
         if (!wanted.length) return
 
-        const html = `
-            <table border="0">
-                ${
-                    wanted.map(entry => `
-                        <tr>
-                            <td><img style="{max-height:180px;max-width:180px;height:auto;width:auto;}" src="${ entry.thumbHref }"></td>
-                            <td><a href="${ entry.href }">${ entry.summary }</a></td>
-                            <td style="width: 12ch">${ entry.beds || '?' }br</td>
-                            <td style="width: 12ch">$${ entry.price || '?' }</td>
-                            <td>${ entry.agency || (entry.privateRental ? "***Private" : "") }</td>
-                        </tr>
-                    `).join('\n')
-                }
-            </table>
-        `
-        .replace(/\s{2,}/g, '')
+        const html = wanted.map(entry =>
+            `<div style="margin: 1.5em 0;">
+                <div><img style="display: block; max-height:180px; max-width:180px; height:auto; width:auto;" src="${ entry.thumbHref }"</img></div>
+                <h5 style="font-size: 1em; margin: 0.5em 0; font-weight: inherit;"> <a href="${ entry.href }"> ${ entry.summary } </a></h5>
+                ${ entry.features_html }
+            </div>`
+        ).join('\n').replace(/\s{2,}/g, '')
 
-        const API_KEY = process.env['SENDGRID_API_KEY']
-        if (API_KEY) {
-            sendgrid.send({
-                to: 'qjw@wacky.one',
-                from: 'apt-cron@mail.wacky.one',
-                subject: `Apartment Report on ${ new Date().toISOString().slice(0, 10) }, (${ wanted.length })`,
-                html
-            })
-            console.log(`email delivered`)
-        } else {
-            console.log(`email delivery skipped due to missing Sendgrid API key`)
-        }
+        require('fs').writeFileSync('out.html', html)
+
+        await deliver_email(
+            `Apartment Report on ${ new Date().toISOString().slice(0, 10) }, (${ wanted.length })`,
+            html
+        )
     } catch(e) {
         console.error(e.stack)
-        if (API_KEY) {
-            sendgrid.send({
-                to: 'qjw@wacky.one',
-                from: 'apt-cron@wacky.one',
-                subject: `Error during list capture, on ${ new Date().toISOString().slice(0, 10) }`,
-                html: `
-                    <pre>${e.stack}</pre>
-                `
-            })
-        }
+        await deliver_email(
+            `[ERROR] Error during list capture, on ${ new Date().toISOString().slice(0, 10) }`,
+            `<pre>${e.stack}</pre>`
+        )
     }
 })()
