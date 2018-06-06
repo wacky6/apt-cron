@@ -10,7 +10,10 @@ RUN apt update && apt install -yq gconf-service libasound2 \
     libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
     ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release \
     xdg-utils wget
-ADD . .
+
+# add and install package.json first, so it can be cached
+ADD package.json .
 RUN yarn install
+ADD . .
 
 ENTRYPOINT ["bin/apt-cron"]
