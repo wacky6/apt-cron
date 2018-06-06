@@ -14,7 +14,6 @@ const WANTED_STREETS = [
     'turner',,
     'city',
     '2601',
-    '2600'
 ]
 
 async function deliver_email(subject, html) {
