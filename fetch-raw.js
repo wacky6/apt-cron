@@ -106,7 +106,7 @@ module.exports = {
         do {
             contents.push(await page.content())
             console.error(`  captured ${++pages} page`)
-        } while(await goNextPage())
+        } while(pages < await numOfPages() && await goNextPage())
         await page.destroy()
 
         require('fs').writeFileSync('contents.json', JSON.stringify(contents, null, '  '))
